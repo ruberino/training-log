@@ -1,3 +1,5 @@
+import { diffDays } from '../../shared/dates.ts';
+
 type Metric = 'weight' | 'reps';
 
 const kgFormatter = new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 1 });
@@ -32,29 +34,17 @@ export function formatDelta(value: number | null, metric: Metric): string {
   return formatter.format(value);
 }
 
-function toUtcMillis(dateString: string): number {
-  const parts = dateString.split('-');
-  const year = Number(parts[0]!);
-  const month = Number(parts[1]!);
-  const day = Number(parts[2]!);
-  return Date.UTC(year, month - 1, day);
-}
-
-function daysBetween(from: string, to: string): number {
-  return Math.round((toUtcMillis(to) - toUtcMillis(from)) / 86_400_000);
-}
-
 export function formatRelativeDate(iso: string, today: string): string {
-  const diffDays = daysBetween(iso, today);
+  const days = diffDays(iso, today);
 
-  if (diffDays === 0) {
+  if (days === 0) {
     return 'i dag';
   }
-  if (diffDays === 1) {
+  if (days === 1) {
     return 'i går';
   }
-  if (diffDays >= 2 && diffDays <= 30) {
-    return `${diffDays} dager siden`;
+  if (days >= 2 && days <= 30) {
+    return `${days} dager siden`;
   }
   return shortDateFormatter.format(new Date(`${iso}T00:00:00Z`));
 }

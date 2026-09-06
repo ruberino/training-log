@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import StatusPage from '../../src/client/pages/StatusPage.tsx';
-import type { ExerciseSummary } from '../../src/shared/schemas.ts';
+import type { Entry, ExerciseSummary } from '../../src/shared/schemas.ts';
 
 vi.mock('../../src/client/api/client.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/client/api/client.ts')>();
@@ -42,6 +42,17 @@ function exercise(
   };
 }
 
+function entry(overrides: Partial<Entry> & Pick<Entry, 'id' | 'date'>): Entry {
+  return {
+    exerciseId: 1,
+    weightKg: null,
+    reps: null,
+    note: null,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('StatusPage', () => {
   beforeEach(() => {
     vi.mocked(fetchJson).mockReset();
@@ -68,24 +79,8 @@ describe('StatusPage', () => {
       exercise({
         id: 1,
         name: 'Benkpress',
-        latest: {
-          id: 2,
-          exerciseId: 1,
-          date: '2026-01-08',
-          weightKg: 82.5,
-          reps: null,
-          note: null,
-          createdAt: '2026-01-08T00:00:00.000Z',
-        },
-        previous: {
-          id: 1,
-          exerciseId: 1,
-          date: '2026-01-01',
-          weightKg: 80,
-          reps: null,
-          note: null,
-          createdAt: '2026-01-01T00:00:00.000Z',
-        },
+        latest: entry({ id: 2, date: '2026-01-08', weightKg: 82.5 }),
+        previous: entry({ id: 1, date: '2026-01-01', weightKg: 80 }),
         delta: 2.5,
       }),
     ]);
@@ -93,8 +88,49 @@ describe('StatusPage', () => {
     renderStatusPage();
 
     expect(await screen.findByText('82,5 kg')).toBeInTheDocument();
-    const delta = screen.getByText('+2,5');
-    expect(delta).toHaveClass('text-green-600');
+    expect(screen.getByText('+2,5')).toHaveClass('text-green-600');
+  });
+
+  it('shows a negative delta in red', async () => {
+    vi.mocked(fetchJson).mockResolvedValue([
+      exercise({
+        id: 1,
+        name: 'Benkpress',
+        latest: entry({ id: 2, date: '2026-01-08', weightKg: 77.5 }),
+        previous: entry({ id: 1, date: '2026-01-01', weightKg: 80 }),
+        delta: -2.5,
+      }),
+    ]);
+
+    renderStatusPage();
+
+    expect(await screen.findByText('−2,5')).toHaveClass('text-red-600');
+  });
+
+  it('shows a zero delta in grey', async () => {
+    vi.mocked(fetchJson).mockResolvedValue([
+      exercise({
+        id: 1,
+        name: 'Benkpress',
+        latest: entry({ id: 2, date: '2026-01-08', weightKg: 80 }),
+        previous: entry({ id: 1, date: '2026-01-01', weightKg: 80 }),
+        delta: 0,
+      }),
+    ]);
+
+    renderStatusPage();
+
+    expect(await screen.findByText('±0')).toHaveClass('text-gray-500');
+  });
+
+  it('shows "Ingen registreringer" and no delta when there is no latest entry', async () => {
+    vi.mocked(fetchJson).mockResolvedValue([exercise({ id: 1, name: 'Benkpress' })]);
+
+    renderStatusPage();
+
+    expect(await screen.findByText('Ingen registreringer')).toBeInTheDocument();
+    expect(screen.queryByText('±0')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^[+−]/)).not.toBeInTheDocument();
   });
 
   it('shows a reps exercise headline and delta', async () => {
@@ -103,24 +139,8 @@ describe('StatusPage', () => {
         id: 1,
         name: 'Pull-ups',
         metric: 'reps',
-        latest: {
-          id: 2,
-          exerciseId: 1,
-          date: '2026-01-08',
-          weightKg: null,
-          reps: 12,
-          note: null,
-          createdAt: '2026-01-08T00:00:00.000Z',
-        },
-        previous: {
-          id: 1,
-          exerciseId: 1,
-          date: '2026-01-01',
-          weightKg: null,
-          reps: 10,
-          note: null,
-          createdAt: '2026-01-01T00:00:00.000Z',
-        },
+        latest: entry({ id: 2, date: '2026-01-08', reps: 12 }),
+        previous: entry({ id: 1, date: '2026-01-01', reps: 10 }),
         delta: 2,
       }),
     ]);

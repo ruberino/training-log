@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isIsoDate, todayLocalIso } from '../../src/shared/dates.ts';
+import { diffDays, isIsoDate, todayLocalIso } from '../../src/shared/dates.ts';
 
 describe('isIsoDate', () => {
   it('accepts valid civil dates', () => {
@@ -29,5 +29,16 @@ describe('todayLocalIso', () => {
   it('returns a valid civil date string', () => {
     const today = todayLocalIso();
     expect(isIsoDate(today)).toBe(true);
+  });
+});
+
+describe('diffDays', () => {
+  it('is positive when `to` is later than `from`', () => {
+    expect(diffDays('2026-09-01', '2026-09-06')).toBe(5);
+  });
+
+  it('is negative when `to` is earlier than `from`, and zero for the same date', () => {
+    expect(diffDays('2026-09-06', '2026-09-01')).toBe(-5);
+    expect(diffDays('2026-09-06', '2026-09-06')).toBe(0);
   });
 });
