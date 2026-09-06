@@ -90,3 +90,5 @@ See `docs/reviews/T13-drill.md` for the last recorded run.
 
 `render.yaml` declares one `web` service, `runtime: docker`, `plan: free`, `healthCheckPath: /api/health`.
 Creating the service and setting `APP_PASSWORD`, `SESSION_SECRET` and the four `LITESTREAM_*` secrets is a manual step in the Render dashboard; the blueprint marks them `sync: false` for exactly that reason.
+
+<!-- CI verification: this line will be removed -->
