@@ -1,5 +1,7 @@
 # Treningslogg
 
+Licensed under the MIT License, see LICENSE.
+
 A small web app for a household to log the weight or repetitions they lift for an exercise, over time.
 The home screen always answers "where am I at?": the latest value per exercise, when it was registered, and the delta since last time.
 
