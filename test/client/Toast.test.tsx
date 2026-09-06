@@ -38,6 +38,7 @@ describe('Toast', () => {
     });
 
     expect(screen.getByRole('status')).toHaveTextContent('Lagret');
+    expect(screen.getByRole('status')).toHaveClass('fixed');
   });
 
   it('disappears after 3 seconds', () => {
