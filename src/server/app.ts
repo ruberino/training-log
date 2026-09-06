@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
+import type { DestinationStream } from 'pino';
 import { ZodError } from 'zod';
 import type { Config } from './config.ts';
 import type { AppDatabase } from './db/client.ts';
@@ -54,6 +55,7 @@ function getFastify4xxStatusCode(error: unknown): number | undefined {
 export type BuildAppOptions = {
   config: Config;
   databasePath?: string;
+  logStream?: DestinationStream;
 };
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
@@ -63,6 +65,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     logger: {
       level: config.logLevel,
       redact: ['req.headers.cookie', 'req.headers.authorization'],
+      ...(options.logStream ? { stream: options.logStream } : {}),
     },
     trustProxy: config.nodeEnv === 'production',
     genReqId: () => randomUUID(),

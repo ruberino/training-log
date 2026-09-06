@@ -98,7 +98,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('gives independent rate-limit counters per forwarded address when trustProxy is on', async () => {
-    const app = createTestApp({ NODE_ENV: 'production' });
+    const app = createTestApp({ env: { NODE_ENV: 'production' } });
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const response = await app.inject({
@@ -175,7 +175,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('sets Secure only when NODE_ENV=production', async () => {
-    const app = createTestApp({ NODE_ENV: 'production' });
+    const app = createTestApp({ env: { NODE_ENV: 'production' } });
 
     const response = await app.inject({
       method: 'POST',
@@ -246,13 +246,13 @@ describe('GET /api/auth/me', () => {
 
   it('gives 401 once SESSION_SECRET changes, invalidating the old cookie', async () => {
     const originalApp = createTestApp({
-      SESSION_SECRET: 'first-session-secret-that-is-32-plus-chars',
+      env: { SESSION_SECRET: 'first-session-secret-that-is-32-plus-chars' },
     });
     const cookie = await loginCookie(originalApp);
     await originalApp.close();
 
     const restartedApp = createTestApp({
-      SESSION_SECRET: 'second-session-secret-that-is-32-plus-chars',
+      env: { SESSION_SECRET: 'second-session-secret-that-is-32-plus-chars' },
     });
 
     const response = await restartedApp.inject({

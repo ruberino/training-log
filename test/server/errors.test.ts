@@ -24,7 +24,8 @@ describe('error handling', () => {
   });
 
   it('returns a generic INTERNAL shape and logs the real error for an unhandled exception', async () => {
-    const app = createTestApp();
+    const logSink: Record<string, unknown>[] = [];
+    const app = createTestApp({ logSink });
     app.get('/api/__boom', async () => {
       throw new Error('boom');
     });
@@ -44,11 +45,19 @@ describe('error handling', () => {
     expect(JSON.stringify(body)).not.toMatch(/stack/i);
     expect(typeof body.error.requestId).toBe('string');
 
+    const errorLine = logSink.find(
+      (line) =>
+        line.level === 50 && (line.err as { message?: string } | undefined)?.message === 'boom',
+    );
+    expect(errorLine).toBeDefined();
+    expect(errorLine?.requestId).toBe(body.error.requestId);
+
     await app.close();
   });
 
   it('maps a malformed JSON body to 400 VALIDATION_ERROR', async () => {
-    const app = createTestApp();
+    const logSink: Record<string, unknown>[] = [];
+    const app = createTestApp({ logSink });
 
     const response = await app.inject({
       method: 'POST',
@@ -61,6 +70,9 @@ describe('error handling', () => {
     const body = response.json();
     expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(response.headers['x-request-id']).toBe(body.error.requestId);
+
+    const warnLine = logSink.find((line) => line.level === 40);
+    expect(warnLine).toBeDefined();
 
     await app.close();
   });
