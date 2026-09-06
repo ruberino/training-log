@@ -9,7 +9,6 @@ import {
   YAxis,
 } from 'recharts';
 import { diffDays, todayLocalIso } from '../../shared/dates.ts';
-import type { Entry } from '../../shared/schemas.ts';
 
 type Range = '3m' | '1y' | 'all';
 
@@ -21,32 +20,25 @@ const RANGES: { value: Range; label: string }[] = [
   { value: 'all', label: 'Alt' },
 ];
 
-type ChartPoint = { date: string; value: number };
+export type ChartPoint = { date: string; value: number };
 
 type TrendChartProps = {
-  entries: Entry[];
-  metric: 'weight' | 'reps';
+  points: ChartPoint[];
+  allowDecimals?: boolean;
 };
 
-export default function TrendChart({ entries, metric }: TrendChartProps) {
+export default function TrendChart({ points: allPoints, allowDecimals = true }: TrendChartProps) {
   const [range, setRange] = useState<Range>('1y');
   const today = todayLocalIso();
 
   const points = useMemo<ChartPoint[]>(() => {
-    const withValue = entries
-      .map((entry) => ({
-        date: entry.date,
-        value: metric === 'weight' ? entry.weightKg : entry.reps,
-      }))
-      .filter((point): point is ChartPoint => point.value !== null);
-
     const inRange =
       range === 'all'
-        ? withValue
-        : withValue.filter((point) => diffDays(point.date, today) <= RANGE_DAYS[range]);
+        ? allPoints
+        : allPoints.filter((point) => diffDays(point.date, today) <= RANGE_DAYS[range]);
 
     return [...inRange].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  }, [entries, metric, range, today]);
+  }, [allPoints, range, today]);
 
   const domain = useMemo<[number, number]>(() => {
     const values = points.map((point) => point.value);
@@ -81,7 +73,7 @@ export default function TrendChart({ entries, metric }: TrendChartProps) {
           <LineChart data={points}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
-            <YAxis domain={domain} allowDecimals={metric === 'weight'} />
+            <YAxis domain={domain} allowDecimals={allowDecimals} />
             <Tooltip />
             <Line
               type="monotone"

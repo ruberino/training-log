@@ -4,6 +4,7 @@ const tabs = [
   { to: '/', label: 'Status', end: true },
   { to: '/register', label: 'Registrer', end: false },
   { to: '/exercises', label: 'Øvelser', end: false },
+  { to: '/vekt', label: 'Vekt', end: false },
 ];
 
 export default function AppShell() {

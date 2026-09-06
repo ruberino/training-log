@@ -43,7 +43,7 @@ describe('App', () => {
     });
   });
 
-  it('shows the guarded shell with three tabs when authenticated', async () => {
+  it('shows the guarded shell with four tabs when authenticated', async () => {
     vi.mocked(fetchJson).mockImplementation((path: string) =>
       path === '/api/exercises' ? Promise.resolve([]) : Promise.resolve({ authenticated: true }),
     );
@@ -54,5 +54,6 @@ describe('App', () => {
     expect(within(nav).getByRole('link', { name: 'Status' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Registrer' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Øvelser' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Vekt' })).toBeInTheDocument();
   });
 });

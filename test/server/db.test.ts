@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 import { openDatabase, type OpenedDatabase } from '../../src/server/db/client.ts';
 import { runMigrations } from '../../src/server/db/migrate.ts';
-import { entries, exercises } from '../../src/server/db/schema.ts';
+import { bodyWeight, entries, exercises } from '../../src/server/db/schema.ts';
 
 function createDb(): OpenedDatabase {
   const opened = openDatabase(':memory:');
@@ -17,7 +17,7 @@ describe('database schema and migrations', () => {
     opened.sqlite.close();
   });
 
-  it('creates both tables after migrating', () => {
+  it('creates all three tables after migrating', () => {
     opened = createDb();
 
     const rows = opened.sqlite
@@ -26,7 +26,7 @@ describe('database schema and migrations', () => {
       )
       .all() as { name: string }[];
 
-    expect(rows.map((row) => row.name).sort()).toEqual(['entries', 'exercises']);
+    expect(rows.map((row) => row.name).sort()).toEqual(['body_weight', 'entries', 'exercises']);
   });
 
   it('running migrations again does not fail or duplicate anything', () => {
@@ -144,6 +144,36 @@ describe('database schema and migrations', () => {
     opened.db.delete(exercises).where(eq(exercises.id, exercise.id)).run();
 
     expect(opened.db.select().from(entries).all()).toHaveLength(0);
+  });
+
+  it('rejects a body_weight row outside 0 < weight_kg < 500, and requires date to be unique', () => {
+    opened = createDb();
+
+    expect(() =>
+      opened.db
+        .insert(bodyWeight)
+        .values({ date: '2026-01-01', weightKg: 0, createdAt: '2026-01-01T00:00:00.000Z' })
+        .run(),
+    ).toThrow(/CHECK constraint failed/);
+
+    expect(() =>
+      opened.db
+        .insert(bodyWeight)
+        .values({ date: '2026-01-01', weightKg: 500, createdAt: '2026-01-01T00:00:00.000Z' })
+        .run(),
+    ).toThrow(/CHECK constraint failed/);
+
+    opened.db
+      .insert(bodyWeight)
+      .values({ date: '2026-01-01', weightKg: 80, createdAt: '2026-01-01T00:00:00.000Z' })
+      .run();
+
+    expect(() =>
+      opened.db
+        .insert(bodyWeight)
+        .values({ date: '2026-01-01', weightKg: 81, createdAt: '2026-01-01T00:00:00.000Z' })
+        .run(),
+    ).toThrow(/UNIQUE constraint failed/);
   });
 
   it('rejects an entry referencing an unknown exercise', () => {

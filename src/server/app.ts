@@ -18,6 +18,7 @@ import {
   toErrorResponse,
 } from './lib/errors.ts';
 import authPlugin from './plugins/auth.ts';
+import bodyWeightRoutes from './routes/bodyWeight.ts';
 import entriesRoutes from './routes/entries.ts';
 import exercisesRoutes from './routes/exercises.ts';
 import healthRoutes from './routes/health.ts';
@@ -147,6 +148,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(authPlugin, { config });
   app.register(exercisesRoutes);
   app.register(entriesRoutes);
+  app.register(bodyWeightRoutes);
 
   return app;
 }
