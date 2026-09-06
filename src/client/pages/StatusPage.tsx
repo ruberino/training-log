@@ -16,7 +16,10 @@ export default function StatusPage() {
       {!isPending && !isError && data.length === 0 && (
         <div className="p-4 text-center text-gray-500">
           <p>Ingen øvelser ennå.</p>
-          <Link to="/exercises" className="text-blue-600 underline">
+          <Link
+            to="/exercises"
+            className="inline-flex min-h-11 items-center justify-center text-blue-600 underline"
+          >
             Legg til en øvelse
           </Link>
         </div>
@@ -34,7 +37,7 @@ export default function StatusPage() {
 
       <Link
         to="/register"
-        className="fixed bottom-20 right-4 rounded-full bg-blue-600 px-6 py-3 font-medium text-white shadow-lg"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 rounded-full bg-blue-600 px-6 py-3 font-medium text-white shadow-lg"
       >
         Registrer
       </Link>

@@ -137,7 +137,7 @@ export default function ExercisePage() {
 
       <Link
         to={`/register?exerciseId=${data.id}`}
-        className="fixed bottom-20 right-4 rounded-full bg-blue-600 px-6 py-3 font-medium text-white shadow-lg"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 rounded-full bg-blue-600 px-6 py-3 font-medium text-white shadow-lg"
       >
         Registrer
       </Link>

@@ -53,6 +53,17 @@ describe('production static serving', () => {
     await app.close();
   });
 
+  it('serves manifest.webmanifest with the manifest content type', async () => {
+    const app = createProductionApp();
+
+    const response = await app.inject({ method: 'GET', url: '/manifest.webmanifest' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('application/manifest+json');
+
+    await app.close();
+  });
+
   it('still returns the JSON NOT_FOUND shape for an unknown API route', async () => {
     const app = createProductionApp();
     const cookie = await loginCookie(app);

@@ -29,7 +29,10 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex min-h-screen flex-col justify-center gap-4 p-6">
+    <form
+      onSubmit={handleSubmit}
+      className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center gap-4 p-6"
+    >
       <h1 className="text-xl font-bold">Treningslogg</h1>
       <label htmlFor="password" className="font-medium">
         Passord
