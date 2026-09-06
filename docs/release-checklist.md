@@ -11,4 +11,5 @@ Run this by hand against the deployed app after every release.
 - [ ] Delete the entry and confirm the empty states show.
 - [ ] Archive the exercise, confirm it leaves the status page, then restore it.
 - [ ] Install the app on a phone home screen (Android "Installer app" or iOS "Legg til på Hjem-skjerm") and confirm it opens standalone.
+- [ ] Register a body weight on `/vekt` and confirm the chart updates.
 - [ ] Confirm `replication: 'on'` in `GET /api/health` after deploy.

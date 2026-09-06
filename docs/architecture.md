@@ -254,6 +254,13 @@ type ExerciseDetail = ExerciseSummary & {
   entries: Entry[];      // ordered by date DESC, id DESC
 };
 
+type BodyWeightEntry = {
+  date: string;          // YYYY-MM-DD, unique
+  weightKg: number;      // 0 < x < 500, at most two decimals
+  note: string | null;
+  createdAt: string;     // ISO UTC
+};
+
 type ApiError = {
   error: {
     code: 'VALIDATION_ERROR' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'CONFLICT' | 'RATE_LIMITED' | 'INTERNAL';
@@ -280,6 +287,9 @@ type ApiError = {
 | `POST /api/entries` | `{ exerciseId, date, weightKg?, reps?, note? }` | `201 Entry` | `404` when exercise missing. `weight` exercises require `weightKg > 0`; `reps` exercises require `reps` and accept `weightKg` omitted, `null` or `0`. Violations are `400 VALIDATION_ERROR`. Registering on an archived exercise is allowed. |
 | `PATCH /api/entries/:id` | any subset of `{ date, weightKg, reps, note }` | `200 Entry` | `weightKg: null`, `reps: null` and `note: null` clear the field. The metric rule is re-checked on the merged entry. |
 | `DELETE /api/entries/:id` | — | `204` | `404` when missing. |
+| `GET /api/body-weight` | — | `200 BodyWeightEntry[]` | Ordered by date DESC. |
+| `PUT /api/body-weight/:date` | `{ weightKg, note? }` | `200 BodyWeightEntry` | Upsert: creates the entry for that date or replaces it. `weightKg` 0 < x < 500. `note: null` clears it. Violations are `400 VALIDATION_ERROR`. |
+| `DELETE /api/body-weight/:date` | — | `204` | `404` when missing. |
 
 ### Error handling
 
@@ -300,8 +310,9 @@ type ApiError = {
 | `/register?exerciseId=` | RegisterPage | `ExerciseSelect`, then the metric field first (`WeightInput` for weight exercises, reps for reps exercises) prefilled from the latest entry, the other field optional, date (default today), note. Save returns to `/` with a toast. |
 | `/exercises/:id` | ExercisePage | Header with name and latest weight, `TrendChart`, `EntryList` with inline edit and delete, rename and archive actions. |
 | `/exercises` | ExercisesPage | Active and archived exercises, add new, rename, archive and unarchive. |
+| `/vekt` | BodyWeightPage | `WeightInput` quick-add form, date default today; `TrendChart` reusing the same component; list with delete, same pattern as EntryList. |
 
-Bottom navigation has three tabs: Status (`/`), Registrer (`/register`), Øvelser (`/exercises`).
+Bottom navigation has four tabs: Status (`/`), Registrer (`/register`), Øvelser (`/exercises`), Vekt (`/vekt`).
 
 ### Behaviour rules
 
