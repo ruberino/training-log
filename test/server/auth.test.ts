@@ -37,6 +37,7 @@ describe('POST /api/auth/login', () => {
     });
     expect(sixth.statusCode).toBe(429);
     expect(sixth.json().error.code).toBe('RATE_LIMITED');
+    expect(sixth.json().error.message).toBe('For mange forsøk. Prøv igjen om et minutt.');
 
     await app.close();
   });

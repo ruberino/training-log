@@ -16,7 +16,7 @@ describe('error handling', () => {
     expect(response.statusCode).toBe(404);
     const body = response.json();
     expect(body.error.code).toBe('NOT_FOUND');
-    expect(typeof body.error.message).toBe('string');
+    expect(body.error.message).toBe('Finnes ikke');
     expect(typeof body.error.requestId).toBe('string');
     expect(response.headers['x-request-id']).toBe(body.error.requestId);
 

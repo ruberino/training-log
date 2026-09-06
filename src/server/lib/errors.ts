@@ -12,20 +12,20 @@ export class AppError extends Error {
 export class ValidationError extends AppError {
   readonly details: unknown;
 
-  constructor(message = 'Invalid request', details?: unknown) {
+  constructor(message = 'Ugyldig forespørsel', details?: unknown) {
     super(400, 'VALIDATION_ERROR', message);
     this.details = details;
   }
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Unauthorized') {
+  constructor(message = 'Ikke innlogget') {
     super(401, 'UNAUTHORIZED', message);
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = 'Not found') {
+  constructor(message = 'Finnes ikke') {
     super(404, 'NOT_FOUND', message);
   }
 }
@@ -33,6 +33,12 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   constructor(message: string) {
     super(409, 'CONFLICT', message);
+  }
+}
+
+export class RateLimitedError extends AppError {
+  constructor(message = 'For mange forsøk. Prøv igjen om et minutt.') {
+    super(429, 'RATE_LIMITED', message);
   }
 }
 
@@ -60,7 +66,7 @@ export function toErrorResponse(error: unknown, requestId: string): ApiErrorBody
   return {
     error: {
       code: 'INTERNAL',
-      message: 'Internal server error',
+      message: 'Noe gikk galt',
       requestId,
     },
   };
