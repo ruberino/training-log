@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeName } from '../../src/server/lib/normalize.ts';
+import { normalizeName } from '../../src/shared/normalize.ts';
 
 describe('normalizeName', () => {
   it('lower-cases the name', () => {

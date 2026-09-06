@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ExerciseSummary } from '../../shared/schemas.ts';
+import type { CreateEntryRequest, Entry, ExerciseSummary } from '../../shared/schemas.ts';
 import { fetchJson } from './client.ts';
 
 type MeResponse = { authenticated: true };
@@ -16,6 +16,37 @@ export function useExercises() {
   return useQuery({
     queryKey: ['exercises'],
     queryFn: () => fetchJson<ExerciseSummary[]>('/api/exercises'),
+  });
+}
+
+export function useCreateExercise() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: { name: string; metric?: 'weight' | 'reps' }) =>
+      fetchJson<ExerciseSummary>('/api/exercises', {
+        method: 'POST',
+        body: JSON.stringify({ metric: 'weight', ...body }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+    },
+  });
+}
+
+export function useCreateEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: CreateEntryRequest) =>
+      fetchJson<Entry>('/api/entries', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (_entry, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', variables.exerciseId] });
+    },
   });
 }
 

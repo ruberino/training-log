@@ -10,7 +10,7 @@ import {
 import { isUniqueViolation } from '../db/client.ts';
 import { entries, exercises } from '../db/schema.ts';
 import { ConflictError, NotFoundError } from '../lib/errors.ts';
-import { normalizeName } from '../lib/normalize.ts';
+import { normalizeName } from '../../shared/normalize.ts';
 import { summarise } from '../lib/status.ts';
 import { toEntry } from './entries.ts';
 

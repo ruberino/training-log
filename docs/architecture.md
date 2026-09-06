@@ -96,7 +96,8 @@ training-log/
   src/
     shared/                  code imported by both client and server (no Node or DOM APIs)
       schemas.ts             zod schemas and inferred types for API payloads
-      dates.ts               civil date helpers (YYYY-MM-DD strings)
+      dates.ts               civil date helpers (YYYY-MM-DD strings), diffDays()
+      normalize.ts           normalizeName(), used by the server for uniqueness and the client's ExerciseSelect for the create option
     server/
       index.ts               reads config, builds app, listens
       app.ts                 buildApp(options): registers plugins, routes, error handler, static serving
@@ -113,7 +114,6 @@ training-log/
         entries.ts           /api/entries*
       lib/
         errors.ts            AppError classes and the error -> HTTP mapping
-        normalize.ts         normalizeName()
     client/
       index.html             Vite entry
       main.tsx               React root, router, QueryClientProvider
