@@ -8,7 +8,7 @@ See `docs/architecture.md` for the full design and `docs/adr/` for the decisions
 
 ## Running locally
 
-Requires Node.js 22 or later and npm 12 or later (`npm install -g npm@12`).
+Requires Node.js 22 or later and npm 12 or later (`npm install -g npm@12`; on a Node older than 22.22.2 or 24.15 run `npx npm@12 ci` instead, or update Node).
 
 ```bash
 npm install
