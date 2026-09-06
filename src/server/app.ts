@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,6 +65,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       redact: ['req.headers.cookie', 'req.headers.authorization'],
     },
     trustProxy: config.nodeEnv === 'production',
+    genReqId: () => randomUUID(),
   });
 
   app.addHook('onSend', async (request, reply, payload) => {
