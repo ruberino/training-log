@@ -57,7 +57,16 @@ There are no workout sessions, no sets, no plans, no exercise library and no AI 
 | Packaging | Single npm package, `npm` as package manager | — | ADR-0002 |
 | Deploy | Docker image on Render (free plan), `render.yaml` | — | ADR-0007 |
 
-Pin exact versions in `package.json` when scaffolding, using the latest release that satisfies the floor above.
+The versions in the table are floors, not targets.
+Pin exact versions in `package.json` and take the newest stable release on npm for every dependency, including a newer major, unless one of these stops it:
+
+- a peer dependency range of another pinned package excludes it;
+- it needs a different Node.js major than the Dockerfile uses, which is an ADR decision, so ask;
+- `lint`, `typecheck`, `test` and `build` cannot pass with configuration changes only, or the upgrade contradicts a task or an ADR, so ask;
+- the release is a pre-release, or its release notes call it unstable.
+
+In those cases take the newest release that does work and record the reason in the commit body, one line per package.
+Dependencies shared with the sibling app are pinned to the same version in both repositories.
 
 ## 4. System overview
 
@@ -277,6 +286,7 @@ type ApiError = {
 - zod failure on body, params or query: `400 VALIDATION_ERROR` with `details` set to `error.issues`.
 - Thrown `AppError` subclasses map to their status: `NotFoundError` 404, `ConflictError` 409, `UnauthorizedError` 401.
 - Anything else: `500 INTERNAL`, generic message, full error logged with `requestId` (ADR-0008).
+- Errors raised by Fastify or its plugins that carry a 4xx `statusCode` keep that status: 429 maps to `RATE_LIMITED` with the message `For mange forsøk. Prøv igjen om et minutt.`, every other 4xx maps to `VALIDATION_ERROR` with the message `Ugyldig forespørsel`; the original error is logged at `warn` with `requestId`.
 - `requestId` is the Fastify `request.id`, also returned in the `x-request-id` header.
 
 ## 8. Frontend
