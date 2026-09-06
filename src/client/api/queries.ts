@@ -19,10 +19,13 @@ export function useMe() {
   });
 }
 
-export function useExercises() {
+export function useExercises(includeArchived = false) {
   return useQuery({
-    queryKey: ['exercises'],
-    queryFn: () => fetchJson<ExerciseSummary[]>('/api/exercises'),
+    queryKey: ['exercises', { includeArchived }],
+    queryFn: () =>
+      fetchJson<ExerciseSummary[]>(
+        includeArchived ? '/api/exercises?includeArchived=true' : '/api/exercises',
+      ),
   });
 }
 
