@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router';
 import { useDeleteEntry, useExercise, useUpdateEntry, useUpdateExercise } from '../api/queries.ts';
 import EntryList from '../components/EntryList.tsx';
 import TrendChart from '../components/TrendChart.tsx';
+import { useToast } from '../components/Toast.tsx';
+import { apiErrorMessage } from '../lib/errorMessage.ts';
 import { formatKg, formatReps } from '../lib/format.ts';
 
 export default function ExercisePage() {
@@ -13,6 +15,7 @@ export default function ExercisePage() {
   const updateExercise = useUpdateExercise(id);
   const updateEntry = useUpdateEntry(id);
   const deleteEntry = useDeleteEntry(id);
+  const { showToast } = useToast();
 
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState('');
@@ -35,11 +38,20 @@ export default function ExercisePage() {
     if (trimmed === '') {
       return;
     }
-    updateExercise.mutate({ name: trimmed }, { onSuccess: () => setRenaming(false) });
+    updateExercise.mutate(
+      { name: trimmed },
+      {
+        onSuccess: () => setRenaming(false),
+        onError: (error) => showToast(apiErrorMessage(error)),
+      },
+    );
   };
 
   const toggleArchive = () => {
-    updateExercise.mutate({ archived: data.archivedAt === null });
+    updateExercise.mutate(
+      { archived: data.archivedAt === null },
+      { onError: (error) => showToast(apiErrorMessage(error)) },
+    );
   };
 
   return (
@@ -107,8 +119,20 @@ export default function ExercisePage() {
       <EntryList
         entries={data.entries}
         metric={data.metric}
-        onUpdate={(entryId, patch) => updateEntry.mutate({ id: entryId, ...patch })}
-        onDelete={(entryId) => deleteEntry.mutate(entryId)}
+        onUpdate={(entryId, patch, onSaved) =>
+          updateEntry.mutate(
+            { id: entryId, ...patch },
+            {
+              onSuccess: onSaved,
+              onError: (error) => showToast(apiErrorMessage(error)),
+            },
+          )
+        }
+        onDelete={(entryId) =>
+          deleteEntry.mutate(entryId, {
+            onError: (error) => showToast(apiErrorMessage(error)),
+          })
+        }
       />
 
       <Link

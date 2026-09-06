@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import EntryList from '../../src/client/components/EntryList.tsx';
+import { todayLocalIso } from '../../src/shared/dates.ts';
 import type { Entry } from '../../src/shared/schemas.ts';
 
 function entry(overrides: Partial<Entry> & Pick<Entry, 'id' | 'date'>): Entry {
@@ -23,9 +24,9 @@ describe('EntryList', () => {
     expect(screen.getByText('Ingen registreringer')).toBeInTheDocument();
   });
 
-  it('edits a weight entry inline and calls onUpdate with the new value', async () => {
+  it('edits a weight entry inline and leaves edit mode once onUpdate reports success', async () => {
     const user = userEvent.setup();
-    const onUpdate = vi.fn();
+    const onUpdate = vi.fn((_id: number, _patch: unknown, onSaved: () => void) => onSaved());
     render(
       <EntryList
         entries={[entry({ id: 1, date: '2026-01-01', weightKg: 80, note: 'Første' })]}
@@ -42,15 +43,15 @@ describe('EntryList', () => {
     await user.type(weightInput, '82,5');
     await user.click(screen.getByRole('button', { name: 'Lagre' }));
 
-    expect(onUpdate).toHaveBeenCalledWith(1, {
-      date: '2026-01-01',
-      weightKg: 82.5,
-      reps: null,
-      note: 'Første',
-    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      1,
+      { date: '2026-01-01', weightKg: 82.5, reps: null, note: 'Første' },
+      expect.any(Function),
+    );
+    expect(screen.queryByLabelText('Vekt')).not.toBeInTheDocument();
   });
 
-  it('edits a reps entry and disables Lagre once reps is cleared', async () => {
+  it('edits a reps entry, disables Lagre once reps is cleared, and stays in edit mode without a success callback', async () => {
     const user = userEvent.setup();
     const onUpdate = vi.fn();
     render(
@@ -75,12 +76,28 @@ describe('EntryList', () => {
     expect(save).toBeEnabled();
     await user.click(save);
 
-    expect(onUpdate).toHaveBeenCalledWith(2, {
-      date: '2026-01-02',
-      weightKg: null,
-      reps: 12,
-      note: null,
-    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      2,
+      { date: '2026-01-02', weightKg: null, reps: 12, note: null },
+      expect.any(Function),
+    );
+    expect(screen.getByLabelText('Repetisjoner')).toBeInTheDocument();
+  });
+
+  it('carries max=today on the edit form date input', async () => {
+    const user = userEvent.setup();
+    render(
+      <EntryList
+        entries={[entry({ id: 1, date: '2026-01-01', weightKg: 80 })]}
+        metric="weight"
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByText('80 kg'));
+
+    expect(screen.getByLabelText('Dato')).toHaveAttribute('max', todayLocalIso());
   });
 
   it('cancels editing without calling onUpdate', async () => {

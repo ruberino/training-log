@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { todayLocalIso } from '../../shared/dates.ts';
 import type { Entry } from '../../shared/schemas.ts';
 import { formatKg, formatReps } from '../lib/format.ts';
 import WeightInput from './WeightInput.tsx';
@@ -15,7 +16,7 @@ export type EntryPatch = {
 type EntryListProps = {
   entries: Entry[];
   metric: Metric;
-  onUpdate: (id: number, patch: EntryPatch) => void;
+  onUpdate: (id: number, patch: EntryPatch, onSaved: () => void) => void;
   onDelete: (id: number) => void;
 };
 
@@ -31,7 +32,7 @@ function parseReps(text: string): number | null {
 type EntryRowProps = {
   entry: Entry;
   metric: Metric;
-  onUpdate: (id: number, patch: EntryPatch) => void;
+  onUpdate: (id: number, patch: EntryPatch, onSaved: () => void) => void;
   onDelete: (id: number) => void;
 };
 
@@ -59,8 +60,9 @@ function EntryRow({ entry, metric, onUpdate, onDelete }: EntryRowProps) {
     if (!canSave) {
       return;
     }
-    onUpdate(entry.id, { date, weightKg, reps, note: note.trim() === '' ? null : note });
-    setEditing(false);
+    onUpdate(entry.id, { date, weightKg, reps, note: note.trim() === '' ? null : note }, () =>
+      setEditing(false),
+    );
   };
 
   if (editing) {
@@ -110,6 +112,7 @@ function EntryRow({ entry, metric, onUpdate, onDelete }: EntryRowProps) {
               id={`date-${entry.id}`}
               type="date"
               value={date}
+              max={todayLocalIso()}
               onChange={(event) => setDate(event.target.value)}
               className="min-h-11 rounded border border-gray-400 px-3 py-2"
             />
