@@ -29,13 +29,18 @@ export function setOnUnauthorized(handler: (() => void) | null): void {
 const LOGIN_PATH = '/api/auth/login';
 
 export async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Fastify rejects a request that declares Content-Type: application/json
+  // but sends no body (e.g. a DELETE with no payload), so only set it when
+  // there actually is a body to parse.
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+  if (init.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const response = await fetch(path, {
     ...init,
     credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {

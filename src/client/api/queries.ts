@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateEntryRequest, Entry, ExerciseSummary } from '../../shared/schemas.ts';
+import type {
+  CreateEntryRequest,
+  Entry,
+  ExerciseDetail,
+  ExerciseSummary,
+  UpdateEntryRequest,
+  UpdateExerciseRequest,
+} from '../../shared/schemas.ts';
 import { fetchJson } from './client.ts';
 
 type MeResponse = { authenticated: true };
@@ -46,6 +53,57 @@ export function useCreateEntry() {
     onSuccess: (_entry, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['exercises'] });
       void queryClient.invalidateQueries({ queryKey: ['exercise', variables.exerciseId] });
+    },
+  });
+}
+
+export function useExercise(id: number) {
+  return useQuery({
+    queryKey: ['exercise', id],
+    queryFn: () => fetchJson<ExerciseDetail>(`/api/exercises/${id}`),
+  });
+}
+
+export function useUpdateExercise(id: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body: UpdateExerciseRequest) =>
+      fetchJson<ExerciseSummary>(`/api/exercises/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', id] });
+    },
+  });
+}
+
+export function useUpdateEntry(exerciseId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number } & UpdateEntryRequest) =>
+      fetchJson<Entry>(`/api/entries/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', exerciseId] });
+    },
+  });
+}
+
+export function useDeleteEntry(exerciseId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => fetchJson<void>(`/api/entries/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', exerciseId] });
     },
   });
 }

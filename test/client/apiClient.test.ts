@@ -26,6 +26,24 @@ describe('fetchJson', () => {
     await expect(fetchJson('/api/auth/logout', { method: 'POST' })).resolves.toBeUndefined();
   });
 
+  it('sends Content-Type: application/json when there is a body', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+
+    await fetchJson('/api/entries', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+  });
+
+  it('omits Content-Type for a bodyless request, since Fastify rejects an empty JSON body', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }));
+
+    await fetchJson('/api/entries/1', { method: 'DELETE' });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+  });
+
   it('parses the error body and throws an ApiRequestError', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(

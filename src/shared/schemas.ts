@@ -100,3 +100,9 @@ export const exerciseSummarySchema = z.object({
 });
 
 export type ExerciseSummary = z.infer<typeof exerciseSummarySchema>;
+
+export const exerciseDetailSchema = exerciseSummarySchema.extend({
+  entries: z.array(entrySchema),
+});
+
+export type ExerciseDetail = z.infer<typeof exerciseDetailSchema>;
