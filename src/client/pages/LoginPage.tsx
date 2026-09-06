@@ -39,7 +39,6 @@ export default function LoginPage() {
         name="password"
         type="password"
         autoComplete="current-password"
-        inputMode="text"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         className="min-h-11 rounded border border-gray-400 px-3 py-2"
