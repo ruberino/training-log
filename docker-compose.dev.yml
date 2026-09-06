@@ -18,6 +18,8 @@ services:
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0
+      DEV_IN_CONTAINER: '1'
+      # Sandbox-only values. Never reuse these outside a developer's own machine.
       APP_PASSWORD: dev-password-123
       SESSION_SECRET: dev-session-secret-change-me-please-32
       DATABASE_PATH: /app/data/training-log.db

@@ -21,13 +21,33 @@ This runs the Fastify API on `http://localhost:3000` and the Vite dev server on 
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Runs the server and the client dev servers together. |
-| `npm run build` | Builds the client into `dist/client`. |
-| `npm start` | Runs the server; serves the built client when `NODE_ENV=production`. |
-| `npm test` | Runs the test suite with Vitest. |
-| `npm run typecheck` | Type-checks the client/shared and server/shared code separately. |
-| `npm run lint` | Lints the codebase with ESLint. |
-| `npm run format` | Formats the codebase with Prettier. |
-| `npm run db:generate` | Generates a Drizzle SQL migration from `src/server/db/schema.ts`. |
+| Script                 | What it does                                                         |
+| ---------------------- | -------------------------------------------------------------------- |
+| `npm run dev`          | Runs the server and the client dev servers together.                 |
+| `npm run build`        | Builds the client into `dist/client`.                                |
+| `npm start`            | Runs the server; serves the built client when `NODE_ENV=production`. |
+| `npm test`             | Runs the test suite with Vitest.                                     |
+| `npm run typecheck`    | Type-checks the client/shared and server/shared code separately.     |
+| `npm run lint`         | Lints the codebase with ESLint.                                      |
+| `npm run format`       | Formats the codebase with Prettier.                                  |
+| `npm run format:check` | Checks formatting with Prettier, without writing changes.            |
+| `npm run db:generate`  | Generates a Drizzle SQL migration from `src/server/db/schema.ts`.    |
+
+## Docker dev sandbox
+
+`docker-compose.dev.yml` runs `npm run dev` inside a `node:22` container instead of on the host.
+It exists for two reasons: `better-sqlite3` needs to be built for Linux rather than the host, and the host's own `3000`/`5173` are already in use by other projects on this machine.
+It is not the production image; T13 owns the real `Dockerfile`, `docker-compose.yml` and Litestream setup.
+
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+The API is reachable at `http://localhost:28300` and the client at `http://localhost:28173`.
+`tsx`'s file watcher does not reliably see host-side edits through the bind mount, so after changing server code, restart the container:
+
+```bash
+docker compose -f docker-compose.dev.yml restart app
+```
+
+Client-side edits still hot-reload through Vite's own websocket.
