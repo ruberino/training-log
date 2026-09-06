@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3';
 import { asc, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -7,6 +6,7 @@ import {
   updateExerciseSchema,
   type ExerciseSummary,
 } from '../../shared/schemas.ts';
+import { isUniqueViolation } from '../db/client.ts';
 import { entries, exercises } from '../db/schema.ts';
 import { ConflictError, NotFoundError } from '../lib/errors.ts';
 import { normalizeName } from '../lib/normalize.ts';
@@ -16,10 +16,6 @@ const idParamSchema = z.object({ id: z.coerce.number().int().positive() }).stric
 const listQuerySchema = z
   .object({ includeArchived: z.enum(['true', 'false']).optional() })
   .strict();
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return error instanceof Database.SqliteError && error.code === 'SQLITE_CONSTRAINT_UNIQUE';
-}
 
 function toSummary(row: typeof exercises.$inferSelect): ExerciseSummary {
   return {
@@ -63,7 +59,7 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
         .returning()
         .get();
     } catch (error) {
-      if (isUniqueConstraintError(error)) {
+      if (isUniqueViolation(error)) {
         throw new ConflictError('Øvelsen finnes allerede');
       }
       throw error;
@@ -128,7 +124,7 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
         .returning()
         .get();
     } catch (error) {
-      if (isUniqueConstraintError(error)) {
+      if (isUniqueViolation(error)) {
         throw new ConflictError('Øvelsen finnes allerede');
       }
       throw error;
