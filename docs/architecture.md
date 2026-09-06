@@ -268,7 +268,7 @@ type ApiError = {
 
 | Method and path | Body | Response | Notes |
 | --- | --- | --- | --- |
-| `GET /api/health` | — | `200 { status: 'ok', version }` | No auth. Used by the Render health check. Must not touch the network. |
+| `GET /api/health` | — | `200 { status: 'ok', version, replication: 'on' \| 'off' }` | No auth. Used by the Render health check. Must not touch the network. `replication` reflects whether `LITESTREAM_BUCKET` is configured, not actual replication lag (ADR-0007). |
 | `POST /api/auth/login` | `{ password }` | `204` and sets cookie | `401` on wrong password. Rate limited to 5 per minute per IP, `429` beyond. |
 | `POST /api/auth/logout` | — | `204` and clears cookie | |
 | `GET /api/auth/me` | — | `200 { authenticated: true }` | `401` when cookie missing or invalid. |
