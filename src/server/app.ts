@@ -140,7 +140,10 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     sqlite.close();
   });
 
-  app.register(healthRoutes, { version: readVersion() });
+  app.register(healthRoutes, {
+    version: readVersion(),
+    replicationEnabled: config.litestreamBucket !== undefined,
+  });
   app.register(authPlugin, { config });
   app.register(exercisesRoutes);
   app.register(entriesRoutes);

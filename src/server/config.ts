@@ -12,6 +12,12 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters long'),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
   TZ: z.string().min(1).default('Europe/Oslo'),
+  // env_file (docker-compose, Render) sets an empty-but-present LITESTREAM_BUCKET=
+  // as "", not undefined, so an empty string must mean "not configured" too.
+  LITESTREAM_BUCKET: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(1).optional(),
+  ),
 });
 
 export type Config = {
@@ -23,6 +29,7 @@ export type Config = {
   sessionSecret: string;
   logLevel: (typeof LOG_LEVELS)[number];
   tz: string;
+  litestreamBucket: string | undefined;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -44,5 +51,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret: parsed.SESSION_SECRET,
     logLevel: parsed.LOG_LEVEL,
     tz: parsed.TZ,
+    litestreamBucket: parsed.LITESTREAM_BUCKET,
   };
 }

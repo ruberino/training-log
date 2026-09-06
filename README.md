@@ -38,7 +38,7 @@ This runs the Fastify API on `http://localhost:3000` and the Vite dev server on 
 
 `docker-compose.dev.yml` runs `npm run dev` inside a `node:22` container instead of on the host.
 It exists because the host's own `3000`/`5173` are already in use by other projects on this machine.
-It is not the production image; T13 owns the real `Dockerfile`, `docker-compose.yml` and Litestream setup.
+It is not the production image; see "Deploy" below for that.
 
 ```bash
 docker compose -f docker-compose.dev.yml up
@@ -52,3 +52,41 @@ docker compose -f docker-compose.dev.yml restart app
 ```
 
 Changing `docker-compose.dev.yml` itself needs `up -d` (recreate), not just `restart`, since `restart` reuses the existing container's environment.
+
+## Deploy
+
+`Dockerfile` builds the production image: a multi-stage build compiles the client, copies the Litestream binary from `litestream/litestream:0.3.13`, and runs on `node:22-alpine`.
+See `docs/architecture.md` section 11 and ADR-0007 for the full design.
+
+Run the production image locally:
+
+```bash
+cp .env.example .env
+# edit .env and set APP_PASSWORD, SESSION_SECRET, and (optionally) the LITESTREAM_* variables
+docker compose up --build
+```
+
+The app is reachable at `http://localhost:8080`, and `/api/health` returns 200.
+Without `LITESTREAM_BUCKET` set, the container starts and logs a warning that data is lost on restart; with it set, `start.sh` restores from the replica on boot and replicates continuously.
+
+### Restore drill
+
+Repeat this after any change to `start.sh` or `litestream.yml` (ADR-0007).
+It runs against a local MinIO started from `docker-compose.drill.yml`, never against the real bucket.
+
+```bash
+docker compose -f docker-compose.drill.yml up --build -d
+# log in, add an exercise, register a couple of entries
+docker compose -f docker-compose.drill.yml down
+docker volume rm training-log_app-data
+docker compose -f docker-compose.drill.yml up -d
+# check http://localhost:8080/api/health and that the entries are back
+docker compose -f docker-compose.drill.yml down -v
+```
+
+See `docs/reviews/T13-drill.md` for the last recorded run.
+
+### Render
+
+`render.yaml` declares one `web` service, `runtime: docker`, `plan: free`, `healthCheckPath: /api/health`.
+Creating the service and setting `APP_PASSWORD`, `SESSION_SECRET` and the four `LITESTREAM_*` secrets is a manual step in the Render dashboard; the blueprint marks them `sync: false` for exactly that reason.

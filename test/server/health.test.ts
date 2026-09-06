@@ -2,14 +2,24 @@ import { describe, expect, it } from 'vitest';
 import { createTestApp } from '../helpers/createTestApp.ts';
 
 describe('GET /api/health', () => {
-  it('returns ok status and a version string', async () => {
+  it('returns ok status, a version string, and replication off by default', async () => {
     const app = createTestApp();
 
     const response = await app.inject({ method: 'GET', url: '/api/health' });
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body).toEqual({ status: 'ok', version: expect.any(String) });
+    expect(body).toEqual({ status: 'ok', version: expect.any(String), replication: 'off' });
+
+    await app.close();
+  });
+
+  it('reports replication on when LITESTREAM_BUCKET is configured', async () => {
+    const app = createTestApp({ env: { LITESTREAM_BUCKET: 'my-bucket' } });
+
+    const response = await app.inject({ method: 'GET', url: '/api/health' });
+
+    expect(response.json()).toMatchObject({ replication: 'on' });
 
     await app.close();
   });

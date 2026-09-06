@@ -31,6 +31,7 @@ describe('loadConfig', () => {
       DATABASE_PATH: '/data/training-log.db',
       LOG_LEVEL: 'debug',
       TZ: 'UTC',
+      LITESTREAM_BUCKET: 'my-bucket',
     });
 
     expect(config.nodeEnv).toBe('production');
@@ -39,6 +40,13 @@ describe('loadConfig', () => {
     expect(config.databasePath).toBe('/data/training-log.db');
     expect(config.logLevel).toBe('debug');
     expect(config.tz).toBe('UTC');
+    expect(config.litestreamBucket).toBe('my-bucket');
+  });
+
+  it('treats an empty LITESTREAM_BUCKET the same as unset, since env_file sets "" not undefined', () => {
+    const config = loadConfig({ ...validEnv, LITESTREAM_BUCKET: '' });
+
+    expect(config.litestreamBucket).toBeUndefined();
   });
 
   it('throws naming the variable when APP_PASSWORD is missing', () => {
