@@ -8,7 +8,14 @@ import type { Config } from './config.ts';
 import type { AppDatabase } from './db/client.ts';
 import { openDatabase } from './db/client.ts';
 import { runMigrations } from './db/migrate.ts';
-import { AppError, NotFoundError, ValidationError, toErrorResponse } from './lib/errors.ts';
+import {
+  AppError,
+  NotFoundError,
+  RateLimitedError,
+  ValidationError,
+  toErrorResponse,
+} from './lib/errors.ts';
+import authPlugin from './plugins/auth.ts';
 import healthRoutes from './routes/health.ts';
 
 declare module 'fastify' {
@@ -25,6 +32,15 @@ function readVersion(): string {
   const pkgPath = path.join(repoRoot, 'package.json');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { version: string };
   return pkg.version;
+}
+
+function isRateLimitError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'statusCode' in error &&
+    (error as { statusCode: unknown }).statusCode === 429
+  );
 }
 
 export type BuildAppOptions = {
@@ -54,6 +70,12 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     if (error instanceof ZodError) {
       const validationError = new ValidationError('Ugyldig forespørsel', error.issues);
       reply.status(validationError.statusCode).send(toErrorResponse(validationError, requestId));
+      return;
+    }
+
+    if (isRateLimitError(error)) {
+      const rateLimited = new RateLimitedError('For mange forsøk, prøv igjen om litt');
+      reply.status(rateLimited.statusCode).send(toErrorResponse(rateLimited, requestId));
       return;
     }
 
@@ -98,6 +120,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   });
 
   app.register(healthRoutes, { version: readVersion() });
+  app.register(authPlugin, { config });
 
   return app;
 }

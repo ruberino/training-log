@@ -36,6 +36,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class RateLimitedError extends AppError {
+  constructor(message = 'Too many attempts') {
+    super(429, 'RATE_LIMITED', message);
+  }
+}
+
 export type ApiErrorBody = {
   error: {
     code: string;

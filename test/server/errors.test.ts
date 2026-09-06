@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { createTestApp } from '../helpers/createTestApp.ts';
+import { loginCookie } from '../helpers/login.ts';
 
 describe('error handling', () => {
   it('returns a NOT_FOUND shape for an unknown API route, with a matching x-request-id', async () => {
     const app = createTestApp();
+    const cookie = await loginCookie(app);
 
-    const response = await app.inject({ method: 'GET', url: '/api/nope' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/nope',
+      headers: { cookie },
+    });
 
     expect(response.statusCode).toBe(404);
     const body = response.json();
@@ -23,8 +29,13 @@ describe('error handling', () => {
       throw new Error('boom');
     });
     await app.ready();
+    const cookie = await loginCookie(app);
 
-    const response = await app.inject({ method: 'GET', url: '/api/__boom' });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/__boom',
+      headers: { cookie },
+    });
 
     expect(response.statusCode).toBe(500);
     const body = response.json();
