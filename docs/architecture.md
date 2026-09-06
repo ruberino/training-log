@@ -57,16 +57,7 @@ There are no workout sessions, no sets, no plans, no exercise library and no AI 
 | Packaging | Single npm package, `npm` as package manager | — | ADR-0002 |
 | Deploy | Docker image on Render (free plan), `render.yaml` | — | ADR-0007 |
 
-The versions in the table are floors, not targets.
-Pin exact versions in `package.json` and take the newest stable release on npm for every dependency, including a newer major, unless one of these stops it:
-
-- a peer dependency range of another pinned package excludes it;
-- it needs a different Node.js major than the Dockerfile uses, which is an ADR decision, so ask;
-- `lint`, `typecheck`, `test` and `build` cannot pass with configuration changes only, or the upgrade contradicts a task or an ADR, so ask;
-- the release is a pre-release, or its release notes call it unstable.
-
-In those cases take the newest release that does work and record the reason in the commit body, one line per package.
-Dependencies shared with the sibling app are pinned to the same version in both repositories.
+Pin exact versions in `package.json` when scaffolding, using the latest release that satisfies the floor above.
 
 ## 4. System overview
 
@@ -354,6 +345,7 @@ There is no global client store.
   Attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age` 365 days, `Secure` when `NODE_ENV=production`.
 - The guard is an `onRequest` hook on every route under `/api` except `/api/auth/login` and `/api/health`.
   It recomputes the expected value and compares with `timingSafeEqual`.
+- The guard runs before routing, so an unauthenticated request to an unknown `/api` path gets `401`, not `404`.
 - Fastify is created with `trustProxy: true` in production, so `request.ip`, and therefore the login rate limit, uses the real client address behind the Render proxy instead of the proxy address shared by everyone.
 - Static files are served without auth.
   The SPA calls `GET /api/auth/me` on load and redirects to `/login` on 401.
