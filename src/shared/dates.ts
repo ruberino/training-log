@@ -36,3 +36,5 @@ export function todayLocalIso(): string {
 export function diffDays(from: string, to: string): number {
   return Math.round((toUtcMillis(to) - toUtcMillis(from)) / 86_400_000);
 }
+
+const unusedDeliberateLintError = 1;
