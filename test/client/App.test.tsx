@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../src/client/App.tsx';
@@ -44,14 +44,15 @@ describe('App', () => {
   });
 
   it('shows the guarded shell with three tabs when authenticated', async () => {
-    vi.mocked(fetchJson).mockResolvedValue({ authenticated: true });
+    vi.mocked(fetchJson).mockImplementation((path: string) =>
+      path === '/api/exercises' ? Promise.resolve([]) : Promise.resolve({ authenticated: true }),
+    );
 
     renderApp('/');
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Status' })).toBeInTheDocument();
-    });
-    expect(screen.getByRole('link', { name: 'Registrer' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Øvelser' })).toBeInTheDocument();
+    const nav = await screen.findByRole('navigation');
+    expect(within(nav).getByRole('link', { name: 'Status' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Registrer' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Øvelser' })).toBeInTheDocument();
   });
 });

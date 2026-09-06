@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ExerciseSummary } from '../../shared/schemas.ts';
 import { fetchJson } from './client.ts';
 
 type MeResponse = { authenticated: true };
@@ -8,6 +9,13 @@ export function useMe() {
     queryKey: ['me'],
     queryFn: () => fetchJson<MeResponse>('/api/auth/me'),
     retry: false,
+  });
+}
+
+export function useExercises() {
+  return useQuery({
+    queryKey: ['exercises'],
+    queryFn: () => fetchJson<ExerciseSummary[]>('/api/exercises'),
   });
 }
 
