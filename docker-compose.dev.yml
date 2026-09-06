@@ -2,11 +2,19 @@
 # modules (better-sqlite3) build for Linux instead of the host, and so the
 # dev servers don't need the host's own 3000/5173. Not the production
 # image; T13 adds the real Dockerfile/docker-compose.yml/Litestream setup.
+#
+# File-change events from the Windows host don't reliably reach tsx's
+# watcher through the bind mount, so edits to src/server don't hot-reload:
+# `docker compose -f docker-compose.dev.yml restart app` after server
+# changes (client changes still hot-reload fine through Vite's own
+# websocket). Rebuilding is fast; node_modules persists in a named volume.
 services:
   app:
     image: node:22
     working_dir: /app
-    command: sh -c "npm ci && npm run dev"
+    # Skip reinstalling into the persisted node_modules volume on every
+    # restart; run `npm ci` by hand after changing package.json.
+    command: sh -c "test -d node_modules/fastify || npm ci; npm run dev"
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0
