@@ -1,2 +1,7 @@
+node_modules/
+dist/
+data/
+.env
+
 # Local state of the Semgrep Guardian plugin, regenerated per directory; never commit.
 .semgrep/
