@@ -44,10 +44,10 @@ docker compose -f docker-compose.dev.yml up
 ```
 
 The API is reachable at `http://localhost:28300` and the client at `http://localhost:28173`.
-`tsx`'s file watcher does not reliably see host-side edits through the bind mount, so after changing server code, restart the container:
+Neither `tsx`'s nor Vite's file watcher reliably sees host-side edits through the bind mount on Windows, so after changing any source file (client or server), restart the container:
 
 ```bash
 docker compose -f docker-compose.dev.yml restart app
 ```
 
-Client-side edits still hot-reload through Vite's own websocket.
+Changing `docker-compose.dev.yml` itself needs `up -d` (recreate), not just `restart`, since `restart` reuses the existing container's environment.

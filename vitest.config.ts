@@ -8,6 +8,6 @@ export default defineConfig({
     testTimeout: 15000,
     environment: 'node',
     include: ['test/**/*.test.{ts,tsx}'],
-    setupFiles: ['@testing-library/jest-dom/vitest'],
+    setupFiles: ['@testing-library/jest-dom/vitest', './test/client/setup-cleanup.ts'],
   },
 });
