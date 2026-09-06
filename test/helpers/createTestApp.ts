@@ -13,6 +13,7 @@ export type CreateTestAppOptions = {
   env?: Record<string, string>;
   logSink?: object[];
   clientDir?: string;
+  dbVerbose?: (message?: unknown, ...additionalArgs: unknown[]) => void;
 };
 
 function createLogStream(logSink?: object[]): Writable {
@@ -41,5 +42,6 @@ export function createTestApp(options: CreateTestAppOptions = {}): FastifyInstan
     databasePath: ':memory:',
     logStream: createLogStream(options.logSink),
     clientDir: options.clientDir,
+    dbVerbose: options.dbVerbose,
   });
 }

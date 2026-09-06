@@ -1,15 +1,18 @@
-import { asc, eq, isNull, sql } from 'drizzle-orm';
+import { desc, eq, isNull, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
   createExerciseSchema,
   updateExerciseSchema,
+  type Entry,
   type ExerciseSummary,
 } from '../../shared/schemas.ts';
 import { isUniqueViolation } from '../db/client.ts';
 import { entries, exercises } from '../db/schema.ts';
 import { ConflictError, NotFoundError } from '../lib/errors.ts';
 import { normalizeName } from '../lib/normalize.ts';
+import { summarise } from '../lib/status.ts';
+import { toEntry } from './entries.ts';
 
 const idParamSchema = z.object({ id: z.coerce.number().int().positive() }).strict();
 
@@ -17,16 +20,70 @@ const listQuerySchema = z
   .object({ includeArchived: z.enum(['true', 'false']).optional() })
   .strict();
 
-function toSummary(row: typeof exercises.$inferSelect): ExerciseSummary {
+type RankedEntryRow = {
+  id: number;
+  exercise_id: number;
+  date: string;
+  weight_kg: number | null;
+  reps: number | null;
+  note: string | null;
+  created_at: string;
+};
+
+function toSummary(row: typeof exercises.$inferSelect, recentEntries: Entry[]): ExerciseSummary {
+  const metric = row.metric as ExerciseSummary['metric'];
+  const { latest, previous, delta } = summarise(recentEntries, metric);
   return {
     id: row.id,
     name: row.name,
-    metric: row.metric as ExerciseSummary['metric'],
+    metric,
     archivedAt: row.archivedAt,
-    latest: null,
-    previous: null,
-    delta: null,
+    latest,
+    previous,
+    delta,
   };
+}
+
+function latestTwoEntries(app: FastifyInstance, exerciseId: number): Entry[] {
+  return app.db
+    .select()
+    .from(entries)
+    .where(eq(entries.exerciseId, exerciseId))
+    .orderBy(desc(entries.date), desc(entries.id))
+    .limit(2)
+    .all()
+    .map(toEntry);
+}
+
+function loadLatestEntriesByExercise(app: FastifyInstance): Map<number, Entry[]> {
+  const rows = app.db.all<RankedEntryRow>(sql`
+    SELECT id, exercise_id, date, weight_kg, reps, note, created_at FROM (
+      SELECT id, exercise_id, date, weight_kg, reps, note, created_at,
+             ROW_NUMBER() OVER (PARTITION BY exercise_id ORDER BY date DESC, id DESC) AS rn
+      FROM entries
+    ) ranked
+    WHERE rn <= 2
+  `);
+
+  const map = new Map<number, Entry[]>();
+  for (const row of rows) {
+    const entry: Entry = {
+      id: row.id,
+      exerciseId: row.exercise_id,
+      date: row.date,
+      weightKg: row.weight_kg,
+      reps: row.reps,
+      note: row.note,
+      createdAt: row.created_at,
+    };
+    const existing = map.get(row.exercise_id);
+    if (existing) {
+      existing.push(entry);
+    } else {
+      map.set(row.exercise_id, [entry]);
+    }
+  }
+  return map;
 }
 
 export default async function exercisesRoutes(app: FastifyInstance): Promise<void> {
@@ -35,15 +92,29 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
     const includeArchived = query.includeArchived === 'true';
 
     const rows = includeArchived
-      ? app.db.select().from(exercises).orderBy(asc(exercises.name)).all()
-      : app.db
-          .select()
-          .from(exercises)
-          .where(isNull(exercises.archivedAt))
-          .orderBy(asc(exercises.name))
-          .all();
+      ? app.db.select().from(exercises).all()
+      : app.db.select().from(exercises).where(isNull(exercises.archivedAt)).all();
 
-    return rows.map(toSummary);
+    const latestByExercise = loadLatestEntriesByExercise(app);
+    const summaries = rows.map((row) => toSummary(row, latestByExercise.get(row.id) ?? []));
+
+    summaries.sort((a, b) => {
+      if (a.latest === null && b.latest === null) {
+        return a.name.localeCompare(b.name);
+      }
+      if (a.latest === null) {
+        return 1;
+      }
+      if (b.latest === null) {
+        return -1;
+      }
+      if (a.latest.date !== b.latest.date) {
+        return a.latest.date < b.latest.date ? 1 : -1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return summaries;
   });
 
   app.post('/api/exercises', async (request, reply) => {
@@ -65,7 +136,7 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
       throw error;
     }
 
-    reply.status(201).send(toSummary(created));
+    reply.status(201).send(toSummary(created, []));
   });
 
   app.get('/api/exercises/:id', async (request) => {
@@ -76,7 +147,15 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
       throw new NotFoundError();
     }
 
-    return { ...toSummary(existing), entries: [] };
+    const allEntries = app.db
+      .select()
+      .from(entries)
+      .where(eq(entries.exerciseId, params.id))
+      .orderBy(desc(entries.date), desc(entries.id))
+      .all()
+      .map(toEntry);
+
+    return { ...toSummary(existing, allEntries.slice(0, 2)), entries: allEntries };
   });
 
   app.patch('/api/exercises/:id', async (request) => {
@@ -111,25 +190,23 @@ export default async function exercisesRoutes(app: FastifyInstance): Promise<voi
       updates.archivedAt = body.archived ? new Date().toISOString() : null;
     }
 
-    if (Object.keys(updates).length === 0) {
-      return toSummary(existing);
-    }
-
-    let updated;
-    try {
-      updated = app.db
-        .update(exercises)
-        .set(updates)
-        .where(eq(exercises.id, params.id))
-        .returning()
-        .get();
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        throw new ConflictError('Øvelsen finnes allerede');
+    let target = existing;
+    if (Object.keys(updates).length > 0) {
+      try {
+        target = app.db
+          .update(exercises)
+          .set(updates)
+          .where(eq(exercises.id, params.id))
+          .returning()
+          .get();
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw new ConflictError('Øvelsen finnes allerede');
+        }
+        throw error;
       }
-      throw error;
     }
 
-    return toSummary(updated);
+    return toSummary(target, latestTwoEntries(app, params.id));
   });
 }

@@ -18,6 +18,7 @@ import {
   toErrorResponse,
 } from './lib/errors.ts';
 import authPlugin from './plugins/auth.ts';
+import entriesRoutes from './routes/entries.ts';
 import exercisesRoutes from './routes/exercises.ts';
 import healthRoutes from './routes/health.ts';
 
@@ -57,6 +58,7 @@ export type BuildAppOptions = {
   databasePath?: string;
   logStream?: DestinationStream;
   clientDir?: string;
+  dbVerbose?: (message?: unknown, ...additionalArgs: unknown[]) => void;
 };
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
@@ -129,7 +131,9 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     app.register(fastifyStatic, { root: clientDir });
   }
 
-  const { sqlite, db } = openDatabase(options.databasePath ?? config.databasePath);
+  const { sqlite, db } = openDatabase(options.databasePath ?? config.databasePath, {
+    verbose: options.dbVerbose,
+  });
   runMigrations(db);
   app.decorate('db', db);
   app.addHook('onClose', async () => {
@@ -139,6 +143,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   app.register(healthRoutes, { version: readVersion() });
   app.register(authPlugin, { config });
   app.register(exercisesRoutes);
+  app.register(entriesRoutes);
 
   return app;
 }
