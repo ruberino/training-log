@@ -18,6 +18,7 @@ npm run dev
 ```
 
 This runs the Fastify API on `http://localhost:3000` and the Vite dev server on `http://localhost:5173`, with `/api` proxied to the Fastify process.
+`npm install` also installs a git hook that refuses commits on `main`.
 
 ## Scripts
 
