@@ -26,26 +26,15 @@ export default async function bodyWeightRoutes(app: FastifyInstance): Promise<vo
   app.put('/api/body-weight/:date', async (request) => {
     const params = bodyWeightDateParamSchema.parse(request.params);
     const body = putBodyWeightSchema.parse(request.body);
+    const weightKg = body.weightKg;
+    const note = body.note ?? null;
 
-    const existing = app.db.select().from(bodyWeight).where(eq(bodyWeight.date, params.date)).get();
-
-    const row = existing
-      ? app.db
-          .update(bodyWeight)
-          .set({ weightKg: body.weightKg, note: body.note ?? null })
-          .where(eq(bodyWeight.date, params.date))
-          .returning()
-          .get()
-      : app.db
-          .insert(bodyWeight)
-          .values({
-            date: params.date,
-            weightKg: body.weightKg,
-            note: body.note ?? null,
-            createdAt: new Date().toISOString(),
-          })
-          .returning()
-          .get();
+    const row = app.db
+      .insert(bodyWeight)
+      .values({ date: params.date, weightKg, note, createdAt: new Date().toISOString() })
+      .onConflictDoUpdate({ target: bodyWeight.date, set: { weightKg, note } })
+      .returning()
+      .get();
 
     return toBodyWeightEntry(row);
   });

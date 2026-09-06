@@ -122,6 +122,19 @@ describe('PUT /api/body-weight/:date', () => {
     await app.close();
   });
 
+  it('keeps the original createdAt across an update, since it is not in the upsert set', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const first = await putBodyWeight(app, cookie, '2026-01-01', { weightKg: 80 });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const second = await putBodyWeight(app, cookie, '2026-01-01', { weightKg: 81.5 });
+
+    expect(second.json().createdAt).toBe(first.json().createdAt);
+
+    await app.close();
+  });
+
   it('clears the note when note: null is sent on an update', async () => {
     const app = createTestApp();
     const cookie = await loginCookie(app);
