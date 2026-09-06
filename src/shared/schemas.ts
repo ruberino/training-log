@@ -106,3 +106,29 @@ export const exerciseDetailSchema = exerciseSummarySchema.extend({
 });
 
 export type ExerciseDetail = z.infer<typeof exerciseDetailSchema>;
+
+const bodyWeightKgSchema = z
+  .number()
+  .gt(0)
+  .lt(500)
+  .refine(hasAtMostTwoDecimals, { message: 'Vekt kan ha maks to desimaler' });
+
+export const bodyWeightDateParamSchema = z.object({ date: dateSchema }).strict();
+
+export const putBodyWeightSchema = z
+  .object({
+    weightKg: bodyWeightKgSchema,
+    note: noteSchema.nullable().optional(),
+  })
+  .strict();
+
+export type PutBodyWeightRequest = z.infer<typeof putBodyWeightSchema>;
+
+export const bodyWeightSchema = z.object({
+  date: dateSchema,
+  weightKg: bodyWeightKgSchema,
+  note: z.string().nullable(),
+  createdAt: z.string(),
+});
+
+export type BodyWeightEntry = z.infer<typeof bodyWeightSchema>;

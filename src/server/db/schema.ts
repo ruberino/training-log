@@ -39,3 +39,17 @@ export const entries = sqliteTable(
     index('entries_exercise_date').on(table.exerciseId, desc(table.date), desc(table.id)),
   ],
 );
+
+export const bodyWeight = sqliteTable(
+  'body_weight',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: text('date').notNull().unique(),
+    weightKg: real('weight_kg').notNull(),
+    note: text('note'),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    check('body_weight_weight_kg_check', sql`${table.weightKg} > 0 and ${table.weightKg} < 500`),
+  ],
+);

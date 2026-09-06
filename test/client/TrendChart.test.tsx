@@ -3,18 +3,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import TrendChart from '../../src/client/components/TrendChart.tsx';
-import type { Entry } from '../../src/shared/schemas.ts';
-
-function entry(overrides: Partial<Entry> & Pick<Entry, 'id' | 'date'>): Entry {
-  return {
-    exerciseId: 1,
-    weightKg: null,
-    reps: null,
-    note: null,
-    createdAt: `${overrides.date}T00:00:00.000Z`,
-    ...overrides,
-  };
-}
 
 function isoDaysAgo(days: number): string {
   const date = new Date();
@@ -27,9 +15,7 @@ function isoDaysAgo(days: number): string {
 
 describe('TrendChart', () => {
   it('shows the placeholder text with fewer than two points', () => {
-    render(
-      <TrendChart metric="weight" entries={[entry({ id: 1, date: '2026-01-01', weightKg: 80 })]} />,
-    );
+    render(<TrendChart points={[{ date: '2026-01-01', value: 80 }]} />);
 
     expect(screen.getByText('For få registreringer for graf')).toBeInTheDocument();
   });
@@ -37,10 +23,9 @@ describe('TrendChart', () => {
   it('renders a chart with two or more points', () => {
     const { container } = render(
       <TrendChart
-        metric="weight"
-        entries={[
-          entry({ id: 1, date: '2026-01-01', weightKg: 80 }),
-          entry({ id: 2, date: '2026-02-01', weightKg: 82.5 }),
+        points={[
+          { date: '2026-01-01', value: 80 },
+          { date: '2026-02-01', value: 82.5 },
         ]}
       />,
     );
@@ -54,10 +39,9 @@ describe('TrendChart', () => {
 
     render(
       <TrendChart
-        metric="weight"
-        entries={[
-          entry({ id: 1, date: isoDaysAgo(31), weightKg: 80 }),
-          entry({ id: 2, date: isoDaysAgo(137), weightKg: 78 }),
+        points={[
+          { date: isoDaysAgo(31), value: 80 },
+          { date: isoDaysAgo(137), value: 78 },
         ]}
       />,
     );

@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  BodyWeightEntry,
   CreateEntryRequest,
   Entry,
   ExerciseDetail,
   ExerciseSummary,
+  PutBodyWeightRequest,
   UpdateEntryRequest,
   UpdateExerciseRequest,
 } from '../../shared/schemas.ts';
@@ -107,6 +109,39 @@ export function useDeleteEntry(exerciseId: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['exercises'] });
       void queryClient.invalidateQueries({ queryKey: ['exercise', exerciseId] });
+    },
+  });
+}
+
+export function useBodyWeight() {
+  return useQuery({
+    queryKey: ['body-weight'],
+    queryFn: () => fetchJson<BodyWeightEntry[]>('/api/body-weight'),
+  });
+}
+
+export function usePutBodyWeight() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ date, ...body }: { date: string } & PutBodyWeightRequest) =>
+      fetchJson<BodyWeightEntry>(`/api/body-weight/${date}`, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['body-weight'] });
+    },
+  });
+}
+
+export function useDeleteBodyWeight() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (date: string) => fetchJson<void>(`/api/body-weight/${date}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['body-weight'] });
     },
   });
 }

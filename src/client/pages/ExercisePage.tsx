@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useDeleteEntry, useExercise, useUpdateEntry, useUpdateExercise } from '../api/queries.ts';
 import EntryList from '../components/EntryList.tsx';
-import TrendChart from '../components/TrendChart.tsx';
+import TrendChart, { type ChartPoint } from '../components/TrendChart.tsx';
 import { useToast } from '../components/Toast.tsx';
 import { apiErrorMessage } from '../lib/errorMessage.ts';
 import { formatKg, formatReps } from '../lib/format.ts';
@@ -53,6 +53,13 @@ export default function ExercisePage() {
       { onError: (error) => showToast(apiErrorMessage(error)) },
     );
   };
+
+  const chartPoints: ChartPoint[] = data.entries
+    .map((entry) => ({
+      date: entry.date,
+      value: data.metric === 'weight' ? entry.weightKg : entry.reps,
+    }))
+    .filter((point): point is ChartPoint => point.value !== null);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -114,7 +121,7 @@ export default function ExercisePage() {
         </button>
       </div>
 
-      <TrendChart entries={data.entries} metric={data.metric} />
+      <TrendChart points={chartPoints} allowDecimals={data.metric === 'weight'} />
 
       <EntryList
         entries={data.entries}

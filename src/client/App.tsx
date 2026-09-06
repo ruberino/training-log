@@ -5,6 +5,7 @@ import { setOnUnauthorized } from './api/client.ts';
 import { useMe } from './api/queries.ts';
 import AppShell from './components/AppShell.tsx';
 import { ToastProvider } from './components/Toast.tsx';
+import BodyWeightPage from './pages/BodyWeightPage.tsx';
 import ExercisePage from './pages/ExercisePage.tsx';
 import ExercisesPage from './pages/ExercisesPage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="register" element={<RegisterPage />} />
           <Route path="exercises" element={<ExercisesPage />} />
           <Route path="exercises/:id" element={<ExercisePage />} />
+          <Route path="vekt" element={<BodyWeightPage />} />
         </Route>
       </Routes>
     </ToastProvider>
