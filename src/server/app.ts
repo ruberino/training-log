@@ -29,7 +29,7 @@ declare module 'fastify' {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
-const clientDistDir = path.join(repoRoot, 'dist', 'client');
+const defaultClientDir = path.join(repoRoot, 'dist', 'client');
 
 function readVersion(): string {
   const pkgPath = path.join(repoRoot, 'package.json');
@@ -56,10 +56,12 @@ export type BuildAppOptions = {
   config: Config;
   databasePath?: string;
   logStream?: DestinationStream;
+  clientDir?: string;
 };
 
 export function buildApp(options: BuildAppOptions): FastifyInstance {
   const { config } = options;
+  const clientDir = options.clientDir ?? defaultClientDir;
 
   const app = Fastify({
     logger: {
@@ -114,7 +116,8 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       return;
     }
 
-    if (config.nodeEnv === 'production' && request.method === 'GET') {
+    const acceptsHtml = (request.headers.accept ?? '').includes('text/html');
+    if (config.nodeEnv === 'production' && request.method === 'GET' && acceptsHtml) {
       reply.type('text/html').sendFile('index.html');
       return;
     }
@@ -123,7 +126,7 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
   });
 
   if (config.nodeEnv === 'production') {
-    app.register(fastifyStatic, { root: clientDistDir });
+    app.register(fastifyStatic, { root: clientDir });
   }
 
   const { sqlite, db } = openDatabase(options.databasePath ?? config.databasePath);

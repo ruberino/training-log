@@ -12,6 +12,7 @@ const TEST_ENV: Record<string, string> = {
 export type CreateTestAppOptions = {
   env?: Record<string, string>;
   logSink?: object[];
+  clientDir?: string;
 };
 
 function createLogStream(logSink?: object[]): Writable {
@@ -39,5 +40,6 @@ export function createTestApp(options: CreateTestAppOptions = {}): FastifyInstan
     config,
     databasePath: ':memory:',
     logStream: createLogStream(options.logSink),
+    clientDir: options.clientDir,
   });
 }
