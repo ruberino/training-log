@@ -1,5 +1,4 @@
-# Local dev sandbox only: runs `npm run dev` in a Linux container so native
-# modules (better-sqlite3) build for Linux instead of the host, and so the
+# Local dev sandbox only: runs `npm run dev` in a Linux container so the
 # dev servers don't need the host's own 3000/5173. Not the production
 # image; T13 adds the real Dockerfile/docker-compose.yml/Litestream setup.
 #
@@ -12,9 +11,11 @@ services:
   app:
     image: node:22
     working_dir: /app
-    # Skip reinstalling into the persisted node_modules volume on every
-    # restart; run `npm ci` by hand after changing package.json.
-    command: sh -c "test -d node_modules/fastify || npm ci; npm run dev"
+    # npm 12+ is required: npm ci with an older npm still runs node-gyp for
+    # better-sqlite3 instead of using its bundled prebuild, and fails without
+    # Python/a compiler. Skip reinstalling into the persisted node_modules
+    # volume on every restart; run `npm ci` by hand after changing package.json.
+    command: sh -c "npm install -g npm@12 && (test -d node_modules/fastify || npm ci); npm run dev"
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0

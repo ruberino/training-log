@@ -8,7 +8,7 @@ See `docs/architecture.md` for the full design and `docs/adr/` for the decisions
 
 ## Running locally
 
-Requires Node.js 22 or later.
+Requires Node.js 22 or later and npm 12 or later (`npm install -g npm@12`).
 
 ```bash
 npm install
@@ -36,7 +36,7 @@ This runs the Fastify API on `http://localhost:3000` and the Vite dev server on 
 ## Docker dev sandbox
 
 `docker-compose.dev.yml` runs `npm run dev` inside a `node:22` container instead of on the host.
-It exists for two reasons: `better-sqlite3` needs to be built for Linux rather than the host, and the host's own `3000`/`5173` are already in use by other projects on this machine.
+It exists because the host's own `3000`/`5173` are already in use by other projects on this machine.
 It is not the production image; T13 owns the real `Dockerfile`, `docker-compose.yml` and Litestream setup.
 
 ```bash
