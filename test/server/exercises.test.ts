@@ -54,6 +54,22 @@ describe('GET /api/exercises', () => {
     await app.close();
   });
 
+  it('rejects an invalid includeArchived query value with 400', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/exercises?includeArchived=maybe',
+      headers: { cookie },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
+
   it('returns exercises matching exerciseSummarySchema', async () => {
     const app = createTestApp();
     const cookie = await loginCookie(app);
@@ -113,6 +129,32 @@ describe('POST /api/exercises', () => {
 
     await app.close();
   });
+
+  it('rejects a name longer than 60 characters, naming the field', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const response = await createExercise(app, cookie, { name: 'A'.repeat(61) });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.details[0].path).toEqual(['name']);
+
+    await app.close();
+  });
+
+  it('rejects an unknown property with 400', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const response = await createExercise(app, cookie, { name: 'Knebøy', colour: 'red' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
 });
 
 describe('GET /api/exercises/:id', () => {
@@ -145,6 +187,22 @@ describe('GET /api/exercises/:id', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().entries).toEqual([]);
+
+    await app.close();
+  });
+
+  it('rejects a non-numeric id with 400', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/exercises/abc',
+      headers: { cookie },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
 
     await app.close();
   });
@@ -276,6 +334,25 @@ describe('PATCH /api/exercises/:id', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().metric).toBe('weight');
+
+    await app.close();
+  });
+
+  it('rejects an unknown metric value with 400', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const created = await createExercise(app, cookie, { name: 'Knebøy' });
+    const id = created.json().id;
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/exercises/${id}`,
+      headers: { cookie },
+      payload: { metric: 'time' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
 
     await app.close();
   });
