@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiRequestError } from '../../src/client/api/client.ts';
 import { ToastProvider } from '../../src/client/components/Toast.tsx';
 import RegisterPage from '../../src/client/pages/RegisterPage.tsx';
 import { todayLocalIso } from '../../src/shared/dates.ts';
@@ -173,5 +174,71 @@ describe('RegisterPage', () => {
     renderRegisterPage('/register?exerciseId=7');
 
     expect(await screen.findByLabelText('Vekt')).toBeInTheDocument();
+  });
+
+  it('disables Lagre until a weight exercise has a weight above zero', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchJson).mockResolvedValue([exercise({ id: 1, name: 'Benkpress' })]);
+
+    renderRegisterPage();
+
+    await user.type(await screen.findByLabelText('Øvelse'), 'Benkpress');
+    await user.click(screen.getByText('Benkpress'));
+
+    const submit = screen.getByRole('button', { name: 'Lagre' });
+    expect(submit).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Vekt'), '0');
+    expect(submit).toBeDisabled();
+
+    await user.clear(screen.getByLabelText('Vekt'));
+    await user.type(screen.getByLabelText('Vekt'), '82,5');
+    expect(submit).toBeEnabled();
+  });
+
+  it('disables Lagre until a reps exercise has reps entered', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchJson).mockResolvedValue([exercise({ id: 2, name: 'Pull-ups', metric: 'reps' })]);
+
+    renderRegisterPage();
+
+    await user.type(await screen.findByLabelText('Øvelse'), 'Pull-ups');
+    await user.click(screen.getByText('Pull-ups'));
+
+    const submit = screen.getByRole('button', { name: 'Lagre' });
+    expect(submit).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Repetisjoner'), '10');
+    expect(submit).toBeEnabled();
+  });
+
+  it('shows the server message under the form on a 400', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchJson).mockImplementation((path: string) => {
+      if (path === '/api/exercises') {
+        return Promise.resolve([exercise({ id: 1, name: 'Benkpress' })]);
+      }
+      if (path === '/api/entries') {
+        return Promise.reject(
+          new ApiRequestError(400, {
+            code: 'VALIDATION_ERROR',
+            message: 'Vekt må være større enn 0 for denne øvelsen',
+            requestId: 'req-1',
+          }),
+        );
+      }
+      return Promise.reject(new Error(`unexpected path ${path}`));
+    });
+
+    renderRegisterPage();
+
+    await user.type(await screen.findByLabelText('Øvelse'), 'Benkpress');
+    await user.click(screen.getByText('Benkpress'));
+    await user.type(screen.getByLabelText('Vekt'), '82,5');
+    await user.click(screen.getByRole('button', { name: 'Lagre' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Vekt må være større enn 0 for denne øvelsen',
+    );
   });
 });
