@@ -8,13 +8,7 @@ import type { Config } from './config.ts';
 import type { AppDatabase } from './db/client.ts';
 import { openDatabase } from './db/client.ts';
 import { runMigrations } from './db/migrate.ts';
-import {
-  AppError,
-  NotFoundError,
-  RateLimitedError,
-  ValidationError,
-  toErrorResponse,
-} from './lib/errors.ts';
+import { AppError, NotFoundError, ValidationError, toErrorResponse } from './lib/errors.ts';
 import authPlugin from './plugins/auth.ts';
 import exercisesRoutes from './routes/exercises.ts';
 import healthRoutes from './routes/health.ts';
@@ -35,13 +29,19 @@ function readVersion(): string {
   return pkg.version;
 }
 
-function isRateLimitError(error: unknown): boolean {
-  return (
+function getFastify4xxStatusCode(error: unknown): number | undefined {
+  if (
     typeof error === 'object' &&
     error !== null &&
     'statusCode' in error &&
-    (error as { statusCode: unknown }).statusCode === 429
-  );
+    typeof (error as { statusCode: unknown }).statusCode === 'number'
+  ) {
+    const statusCode = (error as { statusCode: number }).statusCode;
+    if (statusCode >= 400 && statusCode <= 499) {
+      return statusCode;
+    }
+  }
+  return undefined;
 }
 
 export type BuildAppOptions = {
@@ -74,17 +74,23 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
       return;
     }
 
-    if (isRateLimitError(error)) {
-      const rateLimited = new RateLimitedError('For mange forsøk, prøv igjen om litt');
-      reply.status(rateLimited.statusCode).send(toErrorResponse(rateLimited, requestId));
-      return;
-    }
-
     if (error instanceof AppError) {
       if (error.statusCode >= 500) {
         request.log.error({ err: error, requestId }, error.message);
       }
       reply.status(error.statusCode).send(toErrorResponse(error, requestId));
+      return;
+    }
+
+    const fourXxStatusCode = getFastify4xxStatusCode(error);
+    if (fourXxStatusCode !== undefined) {
+      const code = fourXxStatusCode === 429 ? 'RATE_LIMITED' : 'VALIDATION_ERROR';
+      const message =
+        fourXxStatusCode === 429
+          ? 'For mange forsøk. Prøv igjen om et minutt.'
+          : 'Ugyldig forespørsel';
+      request.log.warn({ err: error, requestId }, 'Fastify or plugin error');
+      reply.status(fourXxStatusCode).send({ error: { code, message, requestId } });
       return;
     }
 

@@ -46,4 +46,38 @@ describe('error handling', () => {
 
     await app.close();
   });
+
+  it('maps a malformed JSON body to 400 VALIDATION_ERROR', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' },
+      payload: '{bad json',
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.headers['x-request-id']).toBe(body.error.requestId);
+
+    await app.close();
+  });
+
+  it('maps an unsupported content-type to 415 VALIDATION_ERROR', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/xml' },
+      payload: '<xml/>',
+    });
+
+    expect(response.statusCode).toBe(415);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
 });
