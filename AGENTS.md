@@ -22,4 +22,4 @@ The architecture and the ADRs are normative; a task that disagrees with them is 
   Throw the `AppError` subclasses from `src/server/lib/errors.ts` and let the single error handler map them.
 - Request and response shapes are the zod schemas in `src/shared/schemas.ts`, imported by both client and server.
 - Every API test file has one test that its endpoint returns `401` without the cookie.
-- New dependencies are pinned to an exact version, the newest that satisfies the floor in `docs/architecture.md` section 3.
+- Dependencies are pinned to exact versions at the newest stable release, per the policy in `docs/architecture.md` section 3.
