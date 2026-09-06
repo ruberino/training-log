@@ -152,6 +152,76 @@ describe('POST /api/entries', () => {
 
     await app.close();
   });
+
+  it('rejects a date that does not exist on the calendar', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const exercise = await createExercise(app, cookie, { name: 'Benkpress' });
+
+    const response = await createEntry(app, cookie, {
+      exerciseId: exercise.id,
+      date: '2026-02-30',
+      weightKg: 80,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
+
+  it('rejects reps 0 on a reps exercise', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const exercise = await createExercise(app, cookie, { name: 'Pull-ups', metric: 'reps' });
+
+    const response = await createEntry(app, cookie, {
+      exerciseId: exercise.id,
+      date: '2026-01-01',
+      reps: 0,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
+
+  it('rejects a note longer than 500 characters', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const exercise = await createExercise(app, cookie, { name: 'Benkpress' });
+
+    const response = await createEntry(app, cookie, {
+      exerciseId: exercise.id,
+      date: '2026-01-01',
+      weightKg: 80,
+      note: 'a'.repeat(501),
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
+
+  it('rejects an unknown property', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const exercise = await createExercise(app, cookie, { name: 'Benkpress' });
+
+    const response = await createEntry(app, cookie, {
+      exerciseId: exercise.id,
+      date: '2026-01-01',
+      weightKg: 80,
+      colour: 'red',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+
+    await app.close();
+  });
 });
 
 describe('GET /api/entries', () => {
@@ -161,6 +231,22 @@ describe('GET /api/entries', () => {
     const response = await app.inject({ method: 'GET', url: '/api/entries?exerciseId=1' });
 
     expect(response.statusCode).toBe(401);
+
+    await app.close();
+  });
+
+  it('requires exerciseId', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/entries',
+      headers: { cookie },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
 
     await app.close();
   });
@@ -226,6 +312,29 @@ describe('PATCH /api/entries/:id', () => {
     });
 
     expect(response.statusCode).toBe(404);
+
+    await app.close();
+  });
+
+  it('rejects an unknown property', async () => {
+    const app = createTestApp();
+    const cookie = await loginCookie(app);
+    const exercise = await createExercise(app, cookie, { name: 'Benkpress' });
+    const created = await createEntry(app, cookie, {
+      exerciseId: exercise.id,
+      date: '2026-01-01',
+      weightKg: 80,
+    });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/entries/${created.json().id}`,
+      headers: { cookie },
+      payload: { colour: 'red' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
 
     await app.close();
   });
