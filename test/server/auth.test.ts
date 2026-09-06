@@ -18,6 +18,61 @@ describe('POST /api/auth/login', () => {
     await app.close();
   });
 
+  it('gives 400 VALIDATION_ERROR naming password when the body is empty', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({ method: 'POST', url: '/api/auth/login', payload: {} });
+
+    expect(response.statusCode).toBe(400);
+    const body = response.json();
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.details[0].path).toEqual(['password']);
+
+    await app.close();
+  });
+
+  it('gives 400 when password is not a string', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { password: 123 },
+    });
+
+    expect(response.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it('gives 400 on an unknown property', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { password: 'x', extra: 1 },
+    });
+
+    expect(response.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it('gives 400 for an empty password', async () => {
+    const app = createTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { password: '' },
+    });
+
+    expect(response.statusCode).toBe(400);
+
+    await app.close();
+  });
+
   it('rate limits after 5 attempts within a minute, from the same client', async () => {
     const app = createTestApp();
 

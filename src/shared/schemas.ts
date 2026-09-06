@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const loginSchema = z
   .object({
-    password: z.string(),
+    password: z.string().min(1).max(200),
   })
   .strict();
 
